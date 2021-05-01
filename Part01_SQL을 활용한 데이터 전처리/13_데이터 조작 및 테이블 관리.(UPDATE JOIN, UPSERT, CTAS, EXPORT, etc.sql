@@ -290,4 +290,177 @@ select*from action_film ;
 =====================
 #테이블 구조 변경 실습 
 
+ALTER TABLE LINKS ADD COLUMN TARGET VARCHAR(10);
+ALTER TABLE LINKS ADD COLUMN TARGET boolean; --칼럼 추가
+ALTER TABLE LINKS drop COLUMN TARGET ;
+ALTER TABLE LINKS rename COLUMN title to link_title;
+ALTER TABLE LINKS ALTER COLUMN TARGET -- TARGET 컬럼의 DEFAULT 값을"_BLANK"로 설정 
+SET DEFAULT '_BLACK' ; 
+
+INSERT INTO LINKS (LINK_TITLE, URL)
+VALUES
+('POSTGRESQL TUTORIAL','HTTP://COM/'); --TARGET 컬럼은 NULL로 새로운행을 입력했지만, TARGET 값으로 DEFAULT 값으로 들어간다
+-------------------------------------------------------------
+ALTER TABLE LINKS ADD CHECK(TARTGET IN('_SELF', '_BLANK','_PARENT','_TOP') 
+--이때
+INSERT INTO LINKS(LINK_TITLE, URL, TARGET)
+VALUES('POSTGRESQL','HTTP','WHATEVER'); -- ERROR --> CHECK 제약 조건에 맞지 않아서, 
+
+
+INSERT INTO LINKS (LINK_TITLE, URL)
+VALUES('POSTGRESQL TUTORIAL', 'HTTP://WWW.POSTGRESQLTUTORIAL.COM/');
+
+=========================================================================
+#테이블 이름 변경 
+
+CREATE TABLE VENDORS
+(
+	ID SERIAL PRIMARY KEY
+  ,	NAME VARCHAR NOT NULL
+);
+
+ALTER TABLE VENDORS RENAME TO SUPPLIERS;
+select * from suppliers;
+
+CREATE TABLE SUPPLIER_GROUPS
+( 
+	ID SERIAL PRIMARY KEY 
+  , NAME VARCHAR NOT NULL
+);
+--테이블명 변경
+ALTER TABLE SUPPLIERS ADD COLUMN GROUP_ID INT NOT NULL;
+ALTER TABLE SUPPLIERS ADD FOREIGN KEY(GROUP_ID)
+REFERENCES SUPPLIER_GROUPS(ID);
+--뷰 생성
+CREATE VIEW SUPPLIER_DATE AS 
+SELECT 
+		S.ID
+	, 	S.NAME
+	,	G.NAME "GROUP"
+	FROM 
+		SUPPLIERS S, SUPPLIER_GROUPS G
+WHERE G.ID = S.GROUP_ID;
+
+
+ALTER TABLE SUPPLIER_GROUPS RENAME TO GROUPS; '이름이 바뀌어도 자동으로 제약조건에 참조가 된다.'
+
+SELECT*FROM SUPPLIER_DATE ;
+
+=======================================================
+#13 컬럼 추가
+
+--두개 추가시 
+ALTER TABLE TB_CUST 
+ADD COLUMN PHON VARCHAR(13);
+ADD COLUMN CELL VARCHAR(13);
+
+=======================
+#14 컬럼 제거 
+
+ALTER TABLE BOOKS 
+DROP COLUMN PUBLISHER_ID
+DROP COLUMN PUBLISHER_IDB; 
+
+ALTER TABLE BOOKS DROP COLUMN PUBLISHER_ID CASCADE; --참조제약 조건으로 컬럼 제거가 안될때, 그냥 지우는 방법 하지만 위험한 방법임으로 쓰지 않는게 좋다. 
+
+=========================================================
+#15 컬럼 데이터 타입 변경 
+
+--실습준비 
+CREATE TABLE ASSETS (
+	ID SERIAL PRIMARY KEY 
+  ,	NAME TEXT NOT NULL
+  ,	ASSET_NO VARCHAR(10) NOT NULL
+  ,	DESCRIPTION TEXT 
+  , LOCATION TEXT
+  , ACQUIRED_DATE DATE NOT NULL
+);
+
+INSERT INTO ASSETS(
+	NAME
+  , ASSET_NO
+  , LOCATION
+  , ACQUIRED_DATE
+)
+VALUES
+('SERVER','10001','SERVER ROOM','2017-01-01'),
+('SERVER2','10002','SERVER ROOM2','2017-01-02');
+
+COMMIT;
+
+SELECT * FROM ASSETS;
+
+--칼럼 변경 실습
+ALTER TABLE ASSETS ALTER COLUMN NAME TYPE VARCHAR(50);
+
+ALTER TABLE ASSETS ALTER COLUMN ASSET_NO TYPE INT; --ERROR 뜬다. 
+
+'SQL ERROR [42804]: 오류: "ASSET_NO" 칼럼의 자료형을 INTEGER 형으로 형변환할 수 없음
+  HINT: "USING ASSET_NO::INTEGER" 구문을 추가해야 할 것 같습니다.';
+
+--위의 에러가 뜰때, ;
+ALTER TABLE ASSETS 
+  ALTER COLUMN ASSET_NO TYPE INT USING ASSET_NO ::INTEGER; --타입변경 성공
+ 
+=======================================================================
+#16 칼럼 이름 변경 
+
+ALTER TABLE 테이블명
+RENAME COLUMN 칼럼명 TO 바꿀명 ; 
+
+====================================================================
+#17테이블 제거 
+
+CREATE TABLE AUTHOR 
+( 
+	AUTHOR_ID INT NOT NULL PRIMARY KEY
+,	FIRSTNAME VARCHAR(50)
+,	LASTNAME VARCHAR(50)
+);
+
+CREATE TABLE PAGE (
+	PAGE_ID serial PRIMARY KEY 
+,	TITLE VARCHAR (255) NOT NULL
+,	CONTENT TEXT
+,	AUTHOR_ID INT NOT NULL 
+,	FOREIGN KEY (AUTHOR_ID) REFERENCES AUTHOR (AUTHOR_ID)
+);
+
+insert into author
+values (1, 'minji','haa');
+
+insert into page
+values (1, 'sql','drop',1);
+
+select *from page;
+
+commit;
+
+--부모 날려보기 
+DROP TABLE AUTHOR;
+'SQL ERROR [2BP01]: 오류: 기타 다른 개체들이 이 개체에 의존하고 있어, AUTHOR 테이블 삭제할 수 없음
+  DETAIL: PAGE_AUTHOR_ID_FKEY 제약 조건(해당 개체: PAGE 테이블) 의존대상: AUTHOR 테이블
+  HINT: 이 개체와 관계된 모든 개체들을 함께 삭제하려면 DROP ... CASCADE 명령을 사용하십시오'
+
+DROP TABLE AUTHOR CASCADE; --PAGE의 참조무결성 조건이 사라진다. 
+
+SELECT*FROM PAGE;
+
+======================================================
+#18 임시테이블 
+
+CREATE TEMP TABLE TB_CUST_TEMP_TEST(CUST_ID INT);  --일반테이블과 동일한 이름일때, 임시테이블을 더 먼저 불러온다. DISCONNECT를 하면 테이블이 사라진다. 
+
+SELECT *FROM TB_CUST_TEMP_TEST;
+
+=======================================================
+
+#19 TRUNCATE '대용량의 테이블을 내용을 빠르게 지우는 방법 ' '오라클은 TRUNCATE 는 ROLLBACK이 불가하지만, POSTGRESQL은 가능하다. '
+
+TRUNCATE TABLE BIG_TABLE;
+
+ROLLBACK; --데이터가 돌아온다. 
+
+
+
 
